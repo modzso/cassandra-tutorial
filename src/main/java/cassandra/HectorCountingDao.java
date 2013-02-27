@@ -4,6 +4,8 @@ package cassandra;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 
@@ -29,6 +31,8 @@ import me.prettyprint.hector.api.query.QueryResult;
  *
  */
 public class HectorCountingDao implements CountingDao {
+
+    private static final Logger LOG = LoggerFactory.getLogger(HectorCountingDao.class);
 
     private String columnFamilyName;
     private Keyspace keyspace;
@@ -172,7 +176,7 @@ public class HectorCountingDao implements CountingDao {
         dao.incrementNumberOfAuthenticationFailures("3", "credential3");
 
         Map<String, Integer> values = dao.getNumberOfAuthenticationFailures("3");
-        System.out.println("value:" + values);
+        LOG.debug("value:" + values);
     }
 
 }
