@@ -3,6 +3,9 @@ package cassandra;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import me.prettyprint.cassandra.service.CassandraHostConfigurator;
 import me.prettyprint.hector.api.Cluster;
 import me.prettyprint.hector.api.factory.HFactory;
@@ -21,6 +24,7 @@ import com.netflix.astyanax.serializers.StringSerializer;
 public class DaoUser {
 
     private static final String DEFAULT_CLUSTER_NAME = "default";
+    private static final Logger LOG = LoggerFactory.getLogger(DaoUser.class);
 
 	/**
      * @param args
@@ -31,22 +35,25 @@ public class DaoUser {
         String columnFamilyName = "cassandra_test";
 
 
+        LOG.debug("Initializing AstyanaxDao...");
         AstyanaxDao adao = getAstyanaxDao(hostnames, keyspaceName, columnFamilyName);
         Map<String, String> columns = new HashMap<String, String>();
         columns.put("name", "John Smith");
         columns.put("bar", "foo");
         columns.put("Phone", "12345678");
+        LOG.debug("Storing values...");
         adao.store("row1", columns);
         Map<String, String> astyanaxValues = adao.getValues("row1");
-        System.out.println(astyanaxValues);
+        LOG.debug("Retrieving values:" +  astyanaxValues);
 
 
+        LOG.debug("Initializing HectorDao...");
         me.prettyprint.hector.api.Keyspace keyspace = createHectorKeyspace(hostnames, keyspaceName);
         HectorDao hdao = new HectorDao(keyspace, columnFamilyName);
+        LOG.debug("Storing values...");
         hdao.store("row2", columns);
         Map<String, String> hectorValues = hdao.getValues("row2");
-        System.out.println(hectorValues);
-
+        LOG.debug("Retrieving values:" + hectorValues);
     }
 
 

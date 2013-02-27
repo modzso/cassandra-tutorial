@@ -27,7 +27,7 @@ public class AstyanaxContextFactory {
     private String keyspace;
     private int port;
     private int socketTimeout;
-    private int maxConnsPerHost;
+    private int maxConnsPerHost = DEFAULT_MAX_CONNECTIONS_PER_HOST;
     private String connectionPoolName;
 
     public AstyanaxContext<Keyspace> create() {

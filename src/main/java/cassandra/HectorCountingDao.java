@@ -24,11 +24,11 @@ import me.prettyprint.hector.api.query.ColumnQuery;
 import me.prettyprint.hector.api.query.QueryResult;
 
 /**
- * Implementation of {@StoredPaymentSecurityDAO} with Hector API.
+ * CLI: create column family auth_failures WITH key_validation_class = 'UTF8Type' and default_validation_class='UTF8Type' AND gc_grace = 86400;
  * @author Gyozo_Nyari
  *
  */
-public class HectorCountingDao {
+public class HectorCountingDao implements CountingDao {
 
     private String columnFamilyName;
     private Keyspace keyspace;
@@ -54,22 +54,23 @@ public class HectorCountingDao {
         template = new ThriftColumnFamilyTemplate<String, String>(keyspace, columnFamilyName, keySerializer, columnNameSerializer);
     }
 
-
-    public int getNumberOfAuthenticationFailures(final String userId, final String paymentItemId) {
+    @Override
+    public int getNumberOfAuthenticationFailures(final String userId, final String credentials) {
         Assert.notNull(userId, "UserId can't be null!");
-        Assert.notNull(paymentItemId, "PaymentItemId can't be null!");
+        Assert.notNull(credentials, "Credentials can't be null!");
 
         int authFailures = 0;
         try {
             ColumnFamilyResult<String, String> result = template.queryColumns(getPrefixedKey(userId));
 
-            authFailures = result.getInteger(paymentItemId);
+            authFailures = result.getInteger(credentials);
         } catch (HectorException e) {
             throw new CassandraException("getNumberOfAuthenticationFailures failed!", e);
         }
         return authFailures;
     }
 
+    @Override
     public Map<String, Integer> getNumberOfAuthenticationFailures(final String userId) {
         Assert.notNull(userId, "UserId can't be null!");
         Map<String, Integer> authFailuresMap = new HashMap<String, Integer>();
@@ -88,25 +89,27 @@ public class HectorCountingDao {
         return authFailuresMap;
     }
 
-    public void setNumberOfAuthenticationFailures(final String userId, final String paymentItemId, final int value) {
+    @Override
+    public void setNumberOfAuthenticationFailures(final String userId, final String credentials, final int value) {
         Assert.notNull(userId, "UserId can't be null!");
-        Assert.notNull(paymentItemId, "PaymentItemId can't be null!");
+        Assert.notNull(credentials, "Credentials can't be null!");
 
         try {
             Mutator<String> mutator = HFactory.createMutator(keyspace, keySerializer);
-            mutator.insert(getPrefixedKey(userId), columnFamilyName, HFactory.createColumn(paymentItemId, value, ttl, columnNameSerializer, valueSerializer));
+            mutator.insert(getPrefixedKey(userId), columnFamilyName, HFactory.createColumn(credentials, value, ttl, columnNameSerializer, valueSerializer));
         } catch (HectorException e) {
             throw new CassandraException("setNumberOfAuthenticationFailures has failed!", e);
         }
     }
 
-    public void incrementNumberOfAuthenticationFailures(final String userId, final String paymentItemId) {
+    @Override
+    public void incrementNumberOfAuthenticationFailures(final String userId, final String credentials) {
         Assert.notNull(userId, "UserId can't be null!");
-        Assert.notNull(paymentItemId, "PaymentItemId can't be null!");
+        Assert.notNull(credentials, "Credentials can't be null!");
 
         int value = 0;
 
-        HColumn<String, Integer> column = getColumn(userId, paymentItemId);
+        HColumn<String, Integer> column = getColumn(userId, credentials);
         if (column != null) {
             Integer v = column.getValue();
             value = v != null ? v.intValue() : 0;
@@ -115,16 +118,16 @@ public class HectorCountingDao {
 
         try {
             Mutator<String> mutator = HFactory.createMutator(keyspace, keySerializer);
-            mutator.addInsertion(getPrefixedKey(userId), columnFamilyName, HFactory.createColumn(paymentItemId, value, ttl, columnNameSerializer, valueSerializer));
+            mutator.addInsertion(getPrefixedKey(userId), columnFamilyName, HFactory.createColumn(credentials, value, ttl, columnNameSerializer, valueSerializer));
             mutator.execute();
         } catch (HectorException e) {
             throw new CassandraException("incrementNumberOfAuthenticationFailures has failed!", e);
         }
     }
 
-    private HColumn<String, Integer> getColumn(final String userId, final String paymentItemId) {
+    private HColumn<String, Integer> getColumn(final String userId, final String credentials) {
         ColumnQuery<String, String, Integer> columnQuery = HFactory.createColumnQuery(keyspace, keySerializer, columnNameSerializer, valueSerializer);
-        columnQuery.setColumnFamily(columnFamilyName).setKey(getPrefixedKey(userId)).setName(paymentItemId);
+        columnQuery.setColumnFamily(columnFamilyName).setKey(getPrefixedKey(userId)).setName(credentials);
         QueryResult<HColumn<String, Integer>> result = columnQuery.execute();
 
         HColumn<String, Integer> column = result.get();
@@ -159,14 +162,14 @@ public class HectorCountingDao {
 
         HectorCountingDao dao = new HectorCountingDao();
         dao.setKeyspace(keyspace);
-        dao.setColumnFamilyName("stored_payment_cvv_attempt");
+        dao.setColumnFamilyName("payment_cvv_attempt");
         dao.setPrefix("DEV");
         dao.setTtl(3600);
 
         dao.initialize();
-        dao.incrementNumberOfAuthenticationFailures("3", "paymentItem2");
+        dao.incrementNumberOfAuthenticationFailures("3", "credential2");
 
-        dao.incrementNumberOfAuthenticationFailures("3", "paymentItem3");
+        dao.incrementNumberOfAuthenticationFailures("3", "credential3");
 
         Map<String, Integer> values = dao.getNumberOfAuthenticationFailures("3");
         System.out.println("value:" + values);

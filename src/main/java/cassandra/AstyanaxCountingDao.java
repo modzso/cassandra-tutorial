@@ -1,9 +1,10 @@
 package cassandra;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
@@ -18,74 +19,95 @@ import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
 import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
 import com.netflix.astyanax.model.ColumnList;
-import com.netflix.astyanax.serializers.IntegerSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
 
 /**
- * CLI: create column family payment_cvv_attempt WITH key_validation_class =
- * 'UTF8Type' and default_validation_class='IntegerType';
+ * CLI: create column family auth_failures WITH key_validation_class = 'UTF8Type' and default_validation_class='UTF8Type' AND gc_grace = 86400;
  *
  * @author Gyozo_Nyari
  *
  */
-public class AstyanaxCountingDao {
+public class AstyanaxCountingDao implements CountingDao {
 
     private static final Logger LOG = LoggerFactory.getLogger(AstyanaxCountingDao.class);
     private final ConcurrentMap<String, ReentrantLock> lockMap = new ConcurrentHashMap<String, ReentrantLock>();
 
     private final Keyspace keyspace;
-    private final ColumnFamily<String, Integer> columnFamily;
+    private final ColumnFamily<String, String> columnFamily;
     private int ttl = 60;
 
 
-    public AstyanaxCountingDao(final AstyanaxContext<Keyspace> astyanaxContext, final ColumnFamily<String, Integer> columnFamily) {
+    public AstyanaxCountingDao(final AstyanaxContext<Keyspace> astyanaxContext, final ColumnFamily<String, String> columnFamily) {
         super();
         this.keyspace = astyanaxContext.getEntity();
         this.columnFamily = columnFamily;
     }
 
-    public int getNumberOfAuthenticationFailures(final String paymentItemId) {
+    @Override
+    public int getNumberOfAuthenticationFailures(final String userId, final String credential) {
         int attempts = 0;
         try {
-            lock(paymentItemId);
-            Column<Integer> result = keyspace.prepareQuery(columnFamily).getKey(paymentItemId).getColumn(1).execute().getResult();
+            lock(userId);
+            Column<String> result = keyspace.prepareQuery(columnFamily).getKey(userId).getColumn(credential).execute().getResult();
             attempts = result.getIntegerValue();
         } catch (NotFoundException e) {
             LOG.debug("Column was not found!");             // thrift specific
         } catch (ConnectionException e) {
             throw new CassandraException("getNumberOfAuthenticationFailures", e);
         } finally {
-            unlock(paymentItemId);
+            unlock(userId);
         }
         return attempts;
     }
 
-    public void setNumberOfAuthenticationFailures(final String paymentItemId, final int value) {
+
+
+    @Override
+	public Map<String, Integer> getNumberOfAuthenticationFailures(String userId) {
+		Map<String, Integer> authFailures = new HashMap<>();
+		try {
+			lock(userId);
+            ColumnList<String> result = keyspace.prepareQuery(columnFamily).getKey(userId).execute().getResult();
+            for (Iterator<Column<String>> i = result.iterator(); i.hasNext();) {
+            	Column<String> column = i.next();
+            	authFailures.put(column.getName(), column.getIntegerValue());
+            }
+		} catch (ConnectionException e) {
+			throw new CassandraException("getNumberOfAuthenticationFailures", e);
+		} finally {
+			unlock(userId);
+		}
+		return authFailures;
+	}
+
+	@Override
+    public void setNumberOfAuthenticationFailures(final String userId, final String credential, final int value) {
         try {
-            lock(paymentItemId);
+            lock(userId);
             MutationBatch mutation = keyspace.prepareMutationBatch();
-            mutation.withRow(columnFamily, paymentItemId).putColumn(1, value, ttl);
+            mutation.withRow(columnFamily, userId).putColumn(credential, value, ttl);
             mutation.execute();
         } catch (ConnectionException e) {
             throw new CassandraException("setNumberOfAuthenticationFailures", e);
         } finally {
-            unlock(paymentItemId);
+            unlock(userId);
         }
     }
 
-    public void incrementNumberOfAuthenticationFailures(final String paymentItemId) {
+    @Override
+    public void incrementNumberOfAuthenticationFailures(final String userId, final String credential) {
         int value = 0;
         try {
-            lock(paymentItemId);
-            ColumnList<Integer> result = keyspace.prepareQuery(columnFamily).getKey(paymentItemId).execute().getResult();
+            lock(userId);
+            ColumnList<String> result = keyspace.prepareQuery(columnFamily).getKey(userId).execute().getResult();
             if (!result.isEmpty()) {
-                value = result.getColumnByIndex(0).getIntegerValue();
+                value = result.getColumnByName(credential).getIntegerValue();
             }
-            keyspace.prepareColumnMutation(columnFamily, paymentItemId, 1).putValue(++value, ttl).execute();
+            keyspace.prepareColumnMutation(columnFamily, userId, credential).putValue(++value, ttl).execute();
         } catch (ConnectionException e) {
             throw new CassandraException("incrementNumberOfAuthenticationFailures", e);
         } finally {
-            unlock(paymentItemId);
+            unlock(userId);
         }
     }
 
@@ -119,23 +141,6 @@ public class AstyanaxCountingDao {
         this.ttl = ttl;
     }
 
-    private static class IncrementTask implements Runnable {
-        private final AstyanaxCountingDao dao;
-        private final String paymentItemId;
-
-        public IncrementTask(AstyanaxCountingDao dao, String paymentItemId) {
-            this.dao = dao;
-            this.paymentItemId = paymentItemId;
-        }
-
-        @Override
-        public void run() {
-            LOG.debug(String.format("Before increment [%s]:[%d]", paymentItemId, dao.getNumberOfAuthenticationFailures(paymentItemId)));
-            dao.incrementNumberOfAuthenticationFailures(paymentItemId);
-            LOG.debug(String.format("After increment [%s]:[%d]", paymentItemId, dao.getNumberOfAuthenticationFailures(paymentItemId)));
-        }
-
-    }
 
     public static void main(String[] args) {
         AstyanaxContextFactory factory = new AstyanaxContextFactory();
@@ -148,44 +153,24 @@ public class AstyanaxCountingDao {
         factory.setConnectionPoolName("myConnections");
 
         AstyanaxContext<Keyspace> context = factory.create();
-        ColumnFamily<String, Integer> columnFamily = new ColumnFamily<String, Integer>("payment_cvv_attempt", StringSerializer.get(),
-                IntegerSerializer.get());
+        ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>("auth_failures", StringSerializer.get(),
+                StringSerializer.get());
         AstyanaxCountingDao dao = new AstyanaxCountingDao(context, columnFamily);
 
         LOG.debug("Item1:" + dao.getNumberOfAuthenticationFailures("item1"));
 
-        dao.incrementNumberOfAuthenticationFailures("item1");
-        LOG.debug("Item1:" + dao.getNumberOfAuthenticationFailures("item1"));
-        dao.setNumberOfAuthenticationFailures("item1", 0);
+        dao.incrementNumberOfAuthenticationFailures("user1", "item1");
+        LOG.debug("Item1:" + dao.getNumberOfAuthenticationFailures("user1"));
+        dao.setNumberOfAuthenticationFailures("user1", "item1", 0);
 
         int maxItems = 20;
         for (int i = 0; i < maxItems; i++) {
-            dao.setNumberOfAuthenticationFailures("item" + i, 0);
-        }
-
-        ExecutorService executorService = Executors.newCachedThreadPool();
-
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < maxItems; j++) {
-                String id = "item" + j;
-
-                IncrementTask task = new IncrementTask(dao, id);
-                executorService.execute(task);
-            }
-        }
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            LOG.debug("Awaken");
+            dao.setNumberOfAuthenticationFailures("user1", "item" + i, 0);
         }
 
         for (int i = 0; i < maxItems; i++) {
             LOG.debug("Final: item" + i + " :" + dao.getNumberOfAuthenticationFailures("item" + i));
         }
 
-
-        System.out.println("Shutting down...");         // NOPMD
-        executorService.shutdown();
     }
 }
