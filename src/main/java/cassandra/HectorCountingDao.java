@@ -166,7 +166,7 @@ public class HectorCountingDao implements CountingDao {
 
         HectorCountingDao dao = new HectorCountingDao();
         dao.setKeyspace(keyspace);
-        dao.setColumnFamilyName("payment_cvv_attempt");
+        dao.setColumnFamilyName("auth_failures");
         dao.setPrefix("DEV");
         dao.setTtl(3600);
 

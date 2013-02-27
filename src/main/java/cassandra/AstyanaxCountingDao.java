@@ -34,7 +34,7 @@ public class AstyanaxCountingDao implements CountingDao {
 
     private final Keyspace keyspace;
     private final ColumnFamily<String, String> columnFamily;
-    private int ttl = 60;
+    private int ttl = 3600;
 
 
     public AstyanaxCountingDao(final AstyanaxContext<Keyspace> astyanaxContext, final ColumnFamily<String, String> columnFamily) {
@@ -161,16 +161,6 @@ public class AstyanaxCountingDao implements CountingDao {
 
         dao.incrementNumberOfAuthenticationFailures("user1", "item1");
         LOG.debug("Item1:" + dao.getNumberOfAuthenticationFailures("user1"));
-        dao.setNumberOfAuthenticationFailures("user1", "item1", 0);
-
-        int maxItems = 20;
-        for (int i = 0; i < maxItems; i++) {
-            dao.setNumberOfAuthenticationFailures("user1", "item" + i, 0);
-        }
-
-        for (int i = 0; i < maxItems; i++) {
-            LOG.debug("Final: item" + i + " :" + dao.getNumberOfAuthenticationFailures("item" + i));
-        }
-
+        LOG.debug("Counter:" + dao.getNumberOfAuthenticationFailures("user1", "item1"));
     }
 }
