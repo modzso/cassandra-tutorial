@@ -32,3 +32,9 @@ Requirements:
 - jdk 7
 - cassandra cluster
 
+
+Upcoming:
+---------
+
+- Composite columns
+- Entity persister
