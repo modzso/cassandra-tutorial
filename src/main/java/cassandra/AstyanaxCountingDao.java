@@ -144,13 +144,14 @@ public class AstyanaxCountingDao implements CountingDao {
 
     public static void main(String[] args) {
         AstyanaxContextFactory factory = new AstyanaxContextFactory();
-        factory.setHostNames("localhost");
-        factory.setClusterName("default");
-        factory.setKeyspace("hr");
-        factory.setPort(9160);
-        factory.setMaxConnsPerHost(50);
-        factory.setSocketTimeout(15000);
-        factory.setConnectionPoolName("myConnections");
+        Configuration configuration = Configuration.getConfiguration();
+        factory.setHostNames(configuration.getHostname());
+        factory.setClusterName(configuration.getClusterName());
+        factory.setKeyspace(configuration.getKeyspace());
+        factory.setPort(configuration.getPort());
+        factory.setMaxConnsPerHost(configuration.getMaxConnsPerHost());
+        factory.setSocketTimeout(configuration.getSocketTimeout());
+        factory.setConnectionPoolName(configuration.getConnectionPoolName());
 
         AstyanaxContext<Keyspace> context = factory.create();
         ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>("auth_failures", StringSerializer.get(),

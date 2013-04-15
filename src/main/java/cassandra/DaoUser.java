@@ -30,13 +30,12 @@ public class DaoUser {
      * @param args
      */
     public static void main(String[] args) {
-        String hostnames = "localhost";
-        String keyspaceName = "hr";
         String columnFamilyName = "cassandra_test";
 
 
         LOG.debug("Initializing AstyanaxDao...");
-        AstyanaxDao adao = getAstyanaxDao(hostnames, keyspaceName, columnFamilyName);
+        Configuration configuration = Configuration.getConfiguration();
+        AstyanaxDao adao = getAstyanaxDao(columnFamilyName);
         Map<String, String> columns = new HashMap<String, String>();
         columns.put("name", "John Smith");
         columns.put("bar", "foo");
@@ -48,7 +47,7 @@ public class DaoUser {
 
 
         LOG.debug("Initializing HectorDao...");
-        me.prettyprint.hector.api.Keyspace keyspace = createHectorKeyspace(hostnames, keyspaceName);
+        me.prettyprint.hector.api.Keyspace keyspace = createHectorKeyspace(configuration.getHostname(), configuration.getKeyspace());
         HectorDao hdao = new HectorDao(keyspace, columnFamilyName);
         LOG.debug("Storing values...");
         hdao.store("row2", columns);
@@ -65,23 +64,24 @@ public class DaoUser {
         return keyspace;
     }
 
-    private static AstyanaxDao getAstyanaxDao(String hostnames, String keyspaceName, String columnFamilyName) {
-        AstyanaxContext<Keyspace> context = createAstyanaxConfig(hostnames, keyspaceName, 9160);
+    private static AstyanaxDao getAstyanaxDao(String columnFamilyName) {
+        AstyanaxContext<Keyspace> context = createAstyanaxConfig();
         ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>(columnFamilyName, StringSerializer.get(),
                 StringSerializer.get());
         AstyanaxDao dao = new AstyanaxDao(context, columnFamily);
         return dao;
     }
 
-    public static AstyanaxContext<Keyspace> createAstyanaxConfig(String hostnames, String keyspaceName, int port) {
+    public static AstyanaxContext<Keyspace> createAstyanaxConfig() {
+        Configuration configuration = Configuration.getConfiguration();
         AstyanaxContextFactory factory = new AstyanaxContextFactory();
-        factory.setHostNames(hostnames);
-        factory.setClusterName(DEFAULT_CLUSTER_NAME);
-        factory.setKeyspace(keyspaceName);
-        factory.setPort(port);
-        factory.setMaxConnsPerHost(50);
-        factory.setSocketTimeout(15000);
-        factory.setConnectionPoolName("myConnections");
+        factory.setHostNames(configuration.getHostname());
+        factory.setClusterName(configuration.getClusterName());
+        factory.setKeyspace(configuration.getKeyspace());
+        factory.setPort(configuration.getPort());
+        factory.setMaxConnsPerHost(configuration.getPort());
+        factory.setSocketTimeout(configuration.getSocketTimeout());
+        factory.setConnectionPoolName(configuration.getConnectionPoolName());
 
         AstyanaxContext<Keyspace> context = factory.create();
 
