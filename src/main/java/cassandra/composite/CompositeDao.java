@@ -25,6 +25,12 @@ import com.netflix.astyanax.serializers.StringSerializer;
 import com.netflix.astyanax.thrift.ThriftFamilyFactory;
 
 /**
+ * Dao for demonstrating composite keys.
+ *
+ * create column family Files with comparator = 'CompositeType(UTF8Type,
+ * UTF8Type, UTF8Type)' and key_validation_class = 'UTF8Type' and
+ * default_validation_class = 'UTF8Type';
+ *
  * @author Gyozo_Nyari
  *
  */
@@ -37,14 +43,10 @@ public class CompositeDao<CK> {
 
     public CompositeDao(String host, String keyspace, Class<CK> compositeKeyClass) {
         try {
-            this.astyanaxContext = new AstyanaxContext.Builder()
-                    .forCluster("ClusterName")
-                    .forKeyspace(keyspace)
+            this.astyanaxContext = new AstyanaxContext.Builder().forCluster("ClusterName").forKeyspace(keyspace)
                     .withAstyanaxConfiguration(new AstyanaxConfigurationImpl().setDiscoveryType(NodeDiscoveryType.NONE))
-                    .withConnectionPoolConfiguration(
-                            new ConnectionPoolConfigurationImpl("MyConnectionPool").setMaxConnsPerHost(1)
-                                    .setSeeds(host)).withConnectionPoolMonitor(new CountingConnectionPoolMonitor())
-                    .buildKeyspace(ThriftFamilyFactory.getInstance());
+                    .withConnectionPoolConfiguration(new ConnectionPoolConfigurationImpl("MyConnectionPool").setMaxConnsPerHost(1).setSeeds(host))
+                    .withConnectionPoolMonitor(new CountingConnectionPoolMonitor()).buildKeyspace(ThriftFamilyFactory.getInstance());
 
             this.astyanaxContext.start();
             this.keyspace = this.astyanaxContext.getEntity();
@@ -66,8 +68,7 @@ public class CompositeDao<CK> {
      */
     public void write(String columnFamilyName, String rowKey, Map<String, String> columns) throws ConnectionException {
         MutationBatch mutation = keyspace.prepareMutationBatch();
-        ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>(columnFamilyName,
-                StringSerializer.get(), StringSerializer.get());
+        ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>(columnFamilyName, StringSerializer.get(), StringSerializer.get());
         for (Map.Entry<String, String> entry : columns.entrySet()) {
             mutation.withRow(columnFamily, rowKey).putColumn(entry.getKey(), entry.getValue(), null);
         }
@@ -80,8 +81,7 @@ public class CompositeDao<CK> {
     public void writeComposite(String columnFamilyName, String rowKey, CK compositeKey, byte[] value) throws ConnectionException {
         AnnotatedCompositeSerializer<CK> entitySerializer = new AnnotatedCompositeSerializer<CK>(compositeKeyClazz);
         MutationBatch mutation = keyspace.prepareMutationBatch();
-        ColumnFamily<String, CK> columnFamily = new ColumnFamily<String, CK>(columnFamilyName,
-                StringSerializer.get(), entitySerializer);
+        ColumnFamily<String, CK> columnFamily = new ColumnFamily<String, CK>(columnFamilyName, StringSerializer.get(), entitySerializer);
         mutation.withRow(columnFamily, rowKey).putColumn(compositeKey, value, null);
         mutation.execute();
     }
@@ -90,8 +90,7 @@ public class CompositeDao<CK> {
      * Fetches an entire row.
      */
     public ColumnList<String> read(String columnFamilyName, String rowKey) throws ConnectionException {
-        ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>(columnFamilyName,
-                StringSerializer.get(), StringSerializer.get());
+        ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>(columnFamilyName, StringSerializer.get(), StringSerializer.get());
         OperationResult<ColumnList<String>> result = this.keyspace.prepareQuery(columnFamily).getKey(rowKey).execute();
         return result.getResult();
     }
@@ -104,8 +103,7 @@ public class CompositeDao<CK> {
      */
     public ColumnList<CK> readComposite(String columnFamilyName, String rowKey) throws ConnectionException {
         AnnotatedCompositeSerializer<CK> entitySerializer = new AnnotatedCompositeSerializer<CK>(compositeKeyClazz);
-        ColumnFamily<String, CK> columnFamily = new ColumnFamily<String, CK>(columnFamilyName,
-                StringSerializer.get(), entitySerializer);
+        ColumnFamily<String, CK> columnFamily = new ColumnFamily<String, CK>(columnFamilyName, StringSerializer.get(), entitySerializer);
         OperationResult<ColumnList<CK>> result = this.keyspace.prepareQuery(columnFamily).getKey(rowKey).execute();
         return result.getResult();
     }
@@ -118,8 +116,8 @@ public class CompositeDao<CK> {
      */
     public Column<CompositeKey> readComposite(String columnFamilyName, String rowKey, CompositeKey ck) throws ConnectionException {
         AnnotatedCompositeSerializer<CompositeKey> entitySerializer = new AnnotatedCompositeSerializer<CompositeKey>(CompositeKey.class);
-        ColumnFamily<String, CompositeKey> columnFamily = new ColumnFamily<String, CompositeKey>(columnFamilyName,
-                StringSerializer.get(), entitySerializer);
+        ColumnFamily<String, CompositeKey> columnFamily = new ColumnFamily<String, CompositeKey>(columnFamilyName, StringSerializer.get(),
+                entitySerializer);
         OperationResult<Column<CompositeKey>> result = this.keyspace.prepareQuery(columnFamily).getKey(rowKey).getColumn(ck).execute();
         return result.getResult();
     }
@@ -161,12 +159,13 @@ public class CompositeDao<CK> {
         ColumnList<CompositeKey> cl = dao.readComposite("Files", "1");
         for (CompositeKey key : cl.getColumnNames()) {
             String value = cl.getStringValue(key, null);
-            LOG.debug("{}:{}:{} = {}", new Object[] {key.trackId, key.fileId, key.field, value});
+            LOG.debug("{}:{}:{} = {}", new Object[] { key.trackId, key.fileId, key.field, value });
         }
 
         Column<CompositeKey> column = dao.readComposite("Files", "1", ck2);
 
-        LOG.debug("{}:{}:{} = {}", new Object[] {column.getName().trackId, column.getName().fileId, column.getName().field, column.getStringValue()});
+        LOG.debug("{}:{}:{} = {}",
+                new Object[] { column.getName().trackId, column.getName().fileId, column.getName().field, column.getStringValue() });
     }
 
 }
