@@ -1,12 +1,12 @@
-/**
- *
- */
 package cassandra.composite;
 
 import java.util.Map;
 
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import cassandra.Configuration;
 
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
@@ -123,7 +123,8 @@ public class CompositeDao<CK> {
     }
 
     public static void main(String[] args) throws Exception {
-        CompositeDao<CompositeKey> dao = new CompositeDao<>("localhost", "examples", CompositeKey.class);
+        Configuration configuration = Configuration.getConfiguration();
+        CompositeDao<CompositeKey> dao = new CompositeDao<CompositeKey>(configuration.getHostname(), configuration.getKeyspace(), CompositeKey.class);
 
         CompositeKey ck1 = new CompositeKey();
         ck1.fileId = 1L;

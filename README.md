@@ -24,6 +24,7 @@ Run
     java -cp target/cassandra-0.0.1-SNAPSHOT-jar-with-dependencies.jar cassandra.AstyanaxCountingDao
     java -cp target/cassandra-0.0.1-SNAPSHOT-jar-with-dependencies.jar cassandra.HectorCountingDao
     java -cp target/cassandra-0.0.1-SNAPSHOT-jar-with-dependencies.jar cassandra.DaoUser
+    java -cp target/cassandra-0.0.1-SNAPSHOT-jar-with-dependencies.jar cassandra.composite.CompositeDao
 
 
 Requirements:
