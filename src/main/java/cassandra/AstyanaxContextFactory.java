@@ -6,6 +6,7 @@ import com.netflix.astyanax.Keyspace;
 import com.netflix.astyanax.connectionpool.ConnectionPoolConfiguration;
 import com.netflix.astyanax.connectionpool.ConnectionPoolMonitor;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
+import com.netflix.astyanax.connectionpool.impl.BadHostDetectorImpl;
 import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.astyanax.connectionpool.impl.Slf4jConnectionPoolMonitorImpl;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
@@ -48,8 +49,10 @@ public class AstyanaxContextFactory {
     }
 
     private ConnectionPoolConfiguration getDefaultConnectionPoolConfiguration(String host, int port) {
-        return new ConnectionPoolConfigurationImpl(connectionPoolName).setSocketTimeout(socketTimeout).setPort(port)
+        ConnectionPoolConfigurationImpl connectionPoolConfiguration = new ConnectionPoolConfigurationImpl(connectionPoolName).setSocketTimeout(socketTimeout).setPort(port)
                 .setMaxConnsPerHost(maxConnsPerHost).setSeeds(host + ":" + port).setMaxBlockedThreadsPerHost(20);
+        connectionPoolConfiguration.setBadHostDetector(new BadHostDetectorImpl(connectionPoolConfiguration));
+        return connectionPoolConfiguration;
     }
 
     private ConnectionPoolMonitor getDefaultConnectionPoolMonitor() {
