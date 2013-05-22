@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import cassandra.AstyanaxContextFactory;
+import cassandra.Configuration;
 
 import com.netflix.astyanax.AstyanaxContext;
 import com.netflix.astyanax.Keyspace;
@@ -28,7 +29,8 @@ public class EntityStore<K, C> {
 
 
 	public static void main(String[] args) {
-		Keyspace keyspace = createKeyspace("localhost", "default", "hr", 9160);
+	    Configuration configuration = Configuration.getConfiguration();
+		Keyspace keyspace = createKeyspace(configuration.getHostname(), configuration.getClusterName(), configuration.getKeyspace(), configuration.getPort());
 
         ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>("sample_entity", StringSerializer.get(),
                 StringSerializer.get());
@@ -53,8 +55,8 @@ public class EntityStore<K, C> {
 		SampleEntity stored = entityManager.get("sample1");
 		LOG.debug("Retrieving:" + stored);
 
-		LOG.debug("Deleting sample1...");
-		entityManager.delete("sample1");
+		//LOG.debug("Deleting sample1...");
+		//entityManager.delete("sample1");
 	}
 
 	private static Keyspace createKeyspace(String hosts, String cluster, String keyspaceName, int port) {

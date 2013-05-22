@@ -159,10 +159,11 @@ public class HectorCountingDao implements CountingDao {
     }
 
     public static void main(String[] args) throws Exception {
-        CassandraHostConfigurator cassandraHostConfigurator = new CassandraHostConfigurator("localhost");
+        Configuration configuration = Configuration.getConfiguration();
+        CassandraHostConfigurator cassandraHostConfigurator = new CassandraHostConfigurator(configuration.getHostname());
 
         Cluster cluster = HFactory.createCluster("default", cassandraHostConfigurator);
-        Keyspace keyspace = HFactory.createKeyspace("hr", cluster);
+        Keyspace keyspace = HFactory.createKeyspace(configuration.getKeyspace(), cluster);
 
         HectorCountingDao dao = new HectorCountingDao();
         dao.setKeyspace(keyspace);
