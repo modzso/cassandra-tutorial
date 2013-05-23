@@ -18,7 +18,6 @@ import org.springframework.util.Assert;
 /**
  * Implementation of the {@link Dao} interface with Hector api.
  * @author Gyozo_Nyari
- *
  */
 public class HectorDao implements Dao {
 

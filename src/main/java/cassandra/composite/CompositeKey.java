@@ -18,4 +18,9 @@ public class CompositeKey {
     public CompositeKey() {
     }
 
+    @Override
+    public String toString() {
+        return "CompositeKey [fileId=" + fileId + ", trackId=" + trackId + ", field=" + field + "]";
+    }
+
 }

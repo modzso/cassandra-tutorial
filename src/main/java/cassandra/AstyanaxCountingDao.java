@@ -153,14 +153,20 @@ public class AstyanaxCountingDao implements CountingDao {
         factory.setSocketTimeout(configuration.getSocketTimeout());
         factory.setConnectionPoolName(configuration.getConnectionPoolName());
 
+
+        LOG.debug("Astyanax counting dao example");
         AstyanaxContext<Keyspace> context = factory.create();
         ColumnFamily<String, String> columnFamily = new ColumnFamily<String, String>("auth_failures", StringSerializer.get(),
                 StringSerializer.get());
         AstyanaxCountingDao dao = new AstyanaxCountingDao(context, columnFamily);
 
-        LOG.debug("Item1:" + dao.getNumberOfAuthenticationFailures("item1"));
+        LOG.debug("Authentication failures for item1:");
+        LOG.debug("Item1:" + dao.getNumberOfAuthenticationFailures("user1"));
 
+        LOG.debug("Incrementing authentication failures:");
         dao.incrementNumberOfAuthenticationFailures("user1", "item1");
+
+        LOG.debug("After increment:");
         LOG.debug("Item1:" + dao.getNumberOfAuthenticationFailures("user1"));
         LOG.debug("Counter:" + dao.getNumberOfAuthenticationFailures("user1", "item1"));
     }

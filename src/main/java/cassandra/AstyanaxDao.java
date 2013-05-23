@@ -29,6 +29,11 @@ public class AstyanaxDao implements Dao {
     private final Keyspace keyspace;
     private final ColumnFamily<String, String> columnFamily;
 
+    /**
+     * Constructor.
+     * @param astyanaxContext context
+     * @param columnFamily column family
+     */
     public AstyanaxDao(final AstyanaxContext<Keyspace> astyanaxContext, final ColumnFamily<String, String> columnFamily) {
         super();
         this.keyspace = astyanaxContext.getEntity();
@@ -72,6 +77,7 @@ public class AstyanaxDao implements Dao {
 
     @Override
     public void remove(final String row) {
+        Assert.notNull(row, "Row cant be null!");
         ColumnListMutation<String> mutation = keyspace.prepareMutationBatch().withRow(columnFamily, row);
         mutation.delete();
     }

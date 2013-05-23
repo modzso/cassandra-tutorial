@@ -36,6 +36,7 @@ import com.netflix.astyanax.thrift.ThriftFamilyFactory;
  */
 public class CompositeDao<CK> {
 
+    private static final String ROW_1 = "1";
     private static final Logger LOG = LoggerFactory.getLogger(CompositeDao.class);
     private Keyspace keyspace;
     private AstyanaxContext<Keyspace> astyanaxContext;
@@ -131,44 +132,47 @@ public class CompositeDao<CK> {
         LOG.debug("Column family: {}", "Files");
         CompositeDao<CompositeKey> dao = new CompositeDao<CompositeKey>(configuration.getHostname(), configuration.getKeyspace(), CompositeKey.class);
 
+        LOG.debug("Writing value with composite key:");
         CompositeKey ck1 = new CompositeKey();
         ck1.fileId = 1L;
-
-        dao.writeComposite("Files", "1", ck1, "This is file1".getBytes());
+        dao.writeComposite("Files", ROW_1, ck1, "This is file1".getBytes());
 
         CompositeKey ck1b = new CompositeKey();
         ck1b.fileId = 1L;
         ck1b.field = "Name";
 
-        dao.writeComposite("Files", "1", ck1b, "201300122.txt".getBytes());
+        dao.writeComposite("Files", ROW_1, ck1b, "201300122.txt".getBytes());
 
         CompositeKey ck2 = new CompositeKey();
         ck2.fileId = 1L;
         ck2.trackId = 1L;
 
-        dao.writeComposite("Files", "1", ck2, "This is file1, track1".getBytes());
+        dao.writeComposite("Files", ROW_1, ck2, "This is file1, track1".getBytes());
 
         CompositeKey ck3 = new CompositeKey();
         ck3.fileId = 1L;
         ck3.trackId = 1L;
         ck3.field = "Name";
 
-        dao.writeComposite("Files", "1", ck3, "This is file1, track1, name".getBytes());
+        dao.writeComposite("Files", ROW_1, ck3, "This is file1, track1, name".getBytes());
 
         CompositeKey ck4 = new CompositeKey();
         ck4.fileId = 1L;
         ck4.trackId = 1L;
         ck4.field = "Phone";
 
-        dao.writeComposite("Files", "1", ck4, "+362012345678".getBytes());
+        dao.writeComposite("Files", ROW_1, ck4, "+362012345678".getBytes());
 
-        ColumnList<CompositeKey> cl = dao.readComposite("Files", "1");
+        LOG.debug("Reading {} row values:", ROW_1);
+        ColumnList<CompositeKey> cl = dao.readComposite("Files", ROW_1);
         for (CompositeKey key : cl.getColumnNames()) {
             String value = cl.getStringValue(key, null);
             LOG.debug("{}:{}:{} = {}", new Object[] { key.trackId, key.fileId, key.field, value });
         }
 
-        Column<CompositeKey> column = dao.readComposite("Files", "1", ck2);
+
+        LOG.debug("Read {} row {} composite:", ROW_1, ck2);
+        Column<CompositeKey> column = dao.readComposite("Files", ROW_1, ck2);
 
         LOG.debug("{}:{}:{} = {}",
                 new Object[] { column.getName().trackId, column.getName().fileId, column.getName().field, column.getStringValue() });

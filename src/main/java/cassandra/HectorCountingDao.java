@@ -32,6 +32,12 @@ import me.prettyprint.hector.api.query.QueryResult;
  */
 public class HectorCountingDao implements CountingDao {
 
+    private static final String CREDENTIAL3 = "credential3";
+
+    private static final String ROW_3 = "3";
+
+    private static final String CREDENTIAL2 = "credential2";
+
     private static final Logger LOG = LoggerFactory.getLogger(HectorCountingDao.class);
 
     private String columnFamilyName;
@@ -173,12 +179,15 @@ public class HectorCountingDao implements CountingDao {
         dao.setTtl(3600);
 
         dao.initialize();
-        dao.incrementNumberOfAuthenticationFailures("3", "credential2");
 
-        dao.incrementNumberOfAuthenticationFailures("3", "credential3");
+        LOG.debug("Incrementing row: {} column: {}", ROW_3, CREDENTIAL2);
+        dao.incrementNumberOfAuthenticationFailures(ROW_3, CREDENTIAL2);
 
-        Map<String, Integer> values = dao.getNumberOfAuthenticationFailures("3");
-        LOG.debug("value:" + values);
+        LOG.debug("incrementing row: {} column: {}", ROW_3, CREDENTIAL3);
+        dao.incrementNumberOfAuthenticationFailures(ROW_3, CREDENTIAL3);
+
+        Map<String, Integer> values = dao.getNumberOfAuthenticationFailures(ROW_3);
+        LOG.debug("Retrieved values: {}", values);
 
         LOG.debug("Finished...");
     }
