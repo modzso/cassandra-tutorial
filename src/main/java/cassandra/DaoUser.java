@@ -40,19 +40,21 @@ public class DaoUser {
         columns.put("name", "John Smith");
         columns.put("bar", "foo");
         columns.put("Phone", "12345678");
-        LOG.debug("Storing values...");
+        LOG.debug("AstyanaxDao - Storing values...");
         adao.store("row1", columns);
         Map<String, String> astyanaxValues = adao.getValues("row1");
-        LOG.debug("Retrieving values:" +  astyanaxValues);
+        LOG.debug("AstyanaxDao - Retrieving values:" +  astyanaxValues);
 
 
         LOG.debug("Initializing HectorDao...");
         me.prettyprint.hector.api.Keyspace keyspace = createHectorKeyspace(configuration.getHostname(), configuration.getKeyspace());
         HectorDao hdao = new HectorDao(keyspace, columnFamilyName);
-        LOG.debug("Storing values...");
+        LOG.debug("HectorDao - Storing values...");
         hdao.store("row2", columns);
         Map<String, String> hectorValues = hdao.getValues("row2");
-        LOG.debug("Retrieving values:" + hectorValues);
+        LOG.debug("HectorDao - Retrieving values:" + hectorValues);
+
+        LOG.debug("Finished.");
     }
 
 

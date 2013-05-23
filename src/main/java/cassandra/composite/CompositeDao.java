@@ -55,7 +55,7 @@ public class CompositeDao<CK> {
             this.compositeKeyClazz = compositeKeyClass;
         } catch (Throwable e) {
             LOG.warn("Preparation failed.", e);
-            throw new RuntimeException("Failed to prepare CassandraBolt", e);
+            throw new RuntimeException("Failed to prepare CompositeDao", e);
         }
     }
 
@@ -123,7 +123,12 @@ public class CompositeDao<CK> {
     }
 
     public static void main(String[] args) throws Exception {
+        LOG.debug("Cassandra composite key example.");
         Configuration configuration = Configuration.getConfiguration();
+
+        LOG.debug("Using host(s): {}", configuration.getHostname());
+        LOG.debug("Using keyspace:{}", configuration.getKeyspace());
+        LOG.debug("Column family: {}", "Files");
         CompositeDao<CompositeKey> dao = new CompositeDao<CompositeKey>(configuration.getHostname(), configuration.getKeyspace(), CompositeKey.class);
 
         CompositeKey ck1 = new CompositeKey();
@@ -167,6 +172,10 @@ public class CompositeDao<CK> {
 
         LOG.debug("{}:{}:{} = {}",
                 new Object[] { column.getName().trackId, column.getName().fileId, column.getName().field, column.getStringValue() });
+
+
+        dao.cleanup();
+        LOG.debug("Finished.");
     }
 
 }
