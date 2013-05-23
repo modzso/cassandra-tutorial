@@ -159,6 +159,7 @@ public class HectorCountingDao implements CountingDao {
     }
 
     public static void main(String[] args) throws Exception {
+        LOG.debug("Starting Hector counting dao...");
         Configuration configuration = Configuration.getConfiguration();
         CassandraHostConfigurator cassandraHostConfigurator = new CassandraHostConfigurator(configuration.getHostname());
 
@@ -178,6 +179,8 @@ public class HectorCountingDao implements CountingDao {
 
         Map<String, Integer> values = dao.getNumberOfAuthenticationFailures("3");
         LOG.debug("value:" + values);
+
+        LOG.debug("Finished...");
     }
 
 }
